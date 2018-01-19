@@ -93,13 +93,27 @@ public class CameraActivity extends Activity
         super.onResume();
     }
 
+    public void startFaceDetection() {
+        // Try starting Face Detection
+        Camera.Parameters params = mCamera.getParameters();
+
+        Log.d(TAG, "startFaceDetection: number of faces " + params.getMaxNumDetectedFaces());
+        // start face detection only *after* preview has started
+        if (params.getMaxNumDetectedFaces() > 0) {
+            // camera supports face detection, so can start it:
+            mCamera.startFaceDetection();
+        }
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         mCamera = Camera.open();
         mCamera.setFaceDetectionListener(faceDetectionListener);
-        mCamera.startFaceDetection();
         try {
             mCamera.setPreviewDisplay(surfaceHolder);
+            mCamera.startPreview();
+            Log.d(TAG, "surfaceCreated start preview");
+            startFaceDetection();
         } catch (Exception e) {
             Log.e(TAG, "Could not preview the image.", e);
         }
@@ -123,7 +137,15 @@ public class CameraActivity extends Activity
         setErrorCallback();
 
         // Everything is configured! Finally start the camera preview again:
-        mCamera.startPreview();
+        try {
+            mCamera.setPreviewDisplay(surfaceHolder);
+            mCamera.startPreview();
+            Log.d(TAG, "surfaceChanged: start preview");
+            startFaceDetection(); // re-start face detection feature
+        } catch (Exception e) {
+            // ignore: tried to stop a non-existent preview
+            Log.e(TAG, "Error starting camera preview: " + e.getMessage());
+        }
     }
 
     private void setErrorCallback() {
